@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Driver {
@@ -12,26 +13,32 @@ public class Driver {
 	public final int cityNumber = 53;
 	private int setNumber;
 	private double tMax = 1616;
-	private int populationSize=3;
+	private int populationSize=400;
 	private int bestScore;
 	private int bestIndex;
-	private int bestScoreTwo;
-	private int bestIndexTwo;
-	
+	private int worstScore=9999999;
+	private int worstIndex;
+
 	private final int[] cityScore = new int[cityNumber];
 	private int[] setScore;
 	public int[] cityCluster = new int[cityNumber];
+	private int score[]= new int [populationSize];
+	
 	private int[][] clusters;
 	private int data[][];
 	private double[][] cities = new double[cityNumber][2];
 	public double m_Distance[][] = new double[cityNumber][cityNumber];
+	private List<Integer> population[]= new ArrayList [populationSize];
+	
+
+	
 	List<Integer> randomSet=new ArrayList<Integer>();
 	List<Integer> randomPath = new ArrayList<Integer>();
-	List<Integer> order = new ArrayList<Integer>(populationSize);
-	private List<Integer> population[]= new ArrayList [populationSize];
-	private int score[]= new int [populationSize];
-	private List<Integer> populationTwo[]= new ArrayList [populationSize];
-	private int scoreTwo[]= new int [populationSize];
+//	List<Integer> order = new ArrayList<Integer>(populationSize);
+	List<Integer> firstWinner = new ArrayList<Integer>();
+	List<Integer> secondWinner = new ArrayList<Integer>();
+	List<Integer> offspring = new ArrayList<Integer>();
+
 
 
 
@@ -40,8 +47,103 @@ public class Driver {
 		Driver d = new Driver();
 		d.run_one_time();
 		d.generateRandomPopulation();
-		d.generateRandomPopulationTwo();
+		d.firstStep();
+		System.out.println();
+		System.out.println("We will do the crossover between the winning chromosomes");
+		d.crossover();
 	}
+	
+	public void crossover() {
+		List<Integer> uniqueElementsWinnerOne = new ArrayList<Integer>();
+		List<Integer> uniqueElementsWinnerTwo = new ArrayList<Integer>();
+		List<Integer> commonlElementsOrderOne = new ArrayList<Integer>();
+		List<Integer> commonlElementsOrderTwo = new ArrayList<Integer>();
+		
+		uniqueElementsWinnerOne.addAll(firstWinner);
+		uniqueElementsWinnerOne.removeAll(secondWinner);
+		System.out.println("uniqueElementsWinnerOne are "+uniqueElementsWinnerOne);
+		
+		System.out.println();
+		
+		uniqueElementsWinnerTwo.addAll(secondWinner);
+		uniqueElementsWinnerTwo.removeAll(firstWinner);
+		System.out.println("uniqueElementsWinnerTwo are "+uniqueElementsWinnerTwo);
+		
+		System.out.println();
+		
+		commonlElementsOrderOne.addAll(firstWinner);		
+		commonlElementsOrderOne.retainAll(secondWinner);
+		System.out.println("commonlElements order one "+commonlElementsOrderOne);
+		
+		System.out.println();
+		
+		commonlElementsOrderTwo.addAll(secondWinner);		
+		commonlElementsOrderTwo.retainAll(firstWinner);
+		System.out.println("commonlElements order two "+commonlElementsOrderTwo);
+
+		
+		/*
+		 *  if we have only 4 common elements or less, we don't need to do the crossover, 
+		 *  we just add the unique elements in the genome .
+		 *  we consider the origin as a two common elements
+		 */
+		if (commonlElementsOrderOne.size()>=3) {
+			
+			if (!commonlElementsOrderOne.equals(commonlElementsOrderTwo )) {
+				
+				Random r = new Random();
+				int crosspoint = r.nextInt(commonlElementsOrderOne.size()-2)+1;
+				System.out.println("crosspoint "+crosspoint);
+				
+			}
+		}
+		
+		
+		
+	}
+	
+	public void firstStep() {
+		System.out.println("winner one ");
+		pickTwoRandomSolutions(firstWinner);
+		System.out.println("winner two ");
+		pickTwoRandomSolutions(secondWinner);
+		 while(firstWinner.equals(secondWinner)){
+			 System.out.println("the new second winner is ");
+			 secondWinner.clear();
+			 pickTwoRandomSolutions(secondWinner);
+		    }
+	}
+	
+	public void pickTwoRandomSolutions(List<Integer> winner) {
+		Random rn = new Random();
+		int randomIndexOne = rn.nextInt(populationSize);
+		int randomIndexTwo=rn.nextInt(populationSize);
+		    while(randomIndexOne==randomIndexTwo){
+				randomIndexTwo=rn.nextInt(populationSize);
+		    }
+//		System.out.println("randomIndexOne"+randomIndexOne);
+//		System.out.println("randomIndexTwo"+randomIndexTwo);
+//		System.out.println("population[randomIndexOne]"+population[randomIndexOne]);
+//		System.out.println("population[randomIndexTwo]"+population[randomIndexTwo]);
+//		System.out.println("score[randomIndexOne]"+score[randomIndexOne]);
+//		System.out.println("score[randomIndexTwo]"+score[randomIndexTwo]);
+		Winner(randomIndexOne, randomIndexTwo, winner);
+		System.out.println(winner);
+
+	}
+	
+	private void Winner(int indexOne, int indexTwo, List<Integer> winner) {
+		if (score[indexOne]>score[indexTwo]) {
+			winner.addAll(population[indexOne]);
+			System.out.println("the score of the winner is "+ score[indexOne]);
+		}
+		else {
+			winner.addAll(population[indexTwo]);
+			System.out.println("the score of the winner is "+ score[indexTwo]);
+		}
+	}
+	
+	
 
 	
 	public void generateRandomPopulation() {
@@ -50,47 +152,38 @@ public class Driver {
 			population[i] = new ArrayList<Integer>();
 			population[i] = generateRandomCandidate();
 			score[i]= calculate_path_profit(population[i]);
-//			System.out.println(population[i]);
-//			System.out.println("total_path_profit "+score[i]);
-			saveBestScore (score[i], i);
-//			System.out.println("*************");
-//			System.out.println("*************");
-
+			System.out.println("-----------------------------------");	
+			System.out.println("The score is "+ score[i]);
+	        System.out.println(" Population is "+population[i]);
+	        System.out.println("-----------------------------------");	
+//			saveBestScore (score[i], i);
+	        saveWorstScore (score[i], i);
+	       
 		}
-		System.out.println("-----------------------------------");	
-		System.out.println("Best Score is "+ bestScore);
-        System.out.println("Best Population is "+population[bestIndex]);
-        System.out.println("-----------------------------------");	
+//		 System.out.println("worst score is "+worstScore);
+//		 System.out.println("worst index is "+worstIndex);
+//		System.out.println("-----------------------------------");	
+//		System.out.println("Best Score is "+ bestScore);
+//        System.out.println("Best Population is "+population[bestIndex]);
+//        System.out.println("-----------------------------------");	
 	}
-	public void generateRandomPopulationTwo() {
 
-		for (int i = 0; i < populationSize; i++) {
-			populationTwo[i] = new ArrayList<Integer>();
-			populationTwo[i] = generateRandomCandidate();
-			scoreTwo[i]= calculate_path_profit(populationTwo[i]);
-//			System.out.println(populationTwo[i]);
-//			System.out.println("total_path_profit "+scoreTwo[i]);
-			saveBestScoreTwo (scoreTwo[i], i);
-//			System.out.println("*************");
-//			System.out.println("*************");
-
-		}
-			
-		System.out.println("Best Score is "+ bestScoreTwo);
-        System.out.println("Best Population is "+populationTwo[bestIndexTwo]);
-	}
     private void saveBestScore (int pScore, int index) {
     	if(pScore>bestScore) {
     		bestScore=pScore;
     		bestIndex=index;
     	}
     }
-    private void saveBestScoreTwo (int pScore, int index) {
-    	if(pScore>bestScoreTwo) {
-    		bestScoreTwo=pScore;
-    		bestIndexTwo=index;
+    
+    private void saveWorstScore (int pScore, int index) {
+    	if(pScore<worstScore) {
+    		worstScore=pScore;
+    		worstIndex=index;
     	}
     }
+    
+    
+
 	
 public List<Integer> generateRandomCandidate() {
 	generateRandomSet();
